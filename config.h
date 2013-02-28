@@ -10,4 +10,7 @@
 #define UART_LINE_BUFFER_SIZE 40
 //#define UART_LEDS 1
 
+#define ROTARY_A     (PINC & 0x02)
+#define ROTARY_B     (PINC & 0x01)
+
 #endif
