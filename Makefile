@@ -1,6 +1,6 @@
 
 DEFS = -DF_CPU=8000000
-OBJ = main.o util.o gamma_table.o
+OBJ = main.o util.o gamma_table.o rotary.o
 
 
 # Default values

@@ -1,8 +1,11 @@
 #include <avr/io.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 #include <avr/interrupt.h>
+
 #include "util.h"
+#include "rotary.h"
 #include "gamma_table.h"
 
 
@@ -24,20 +27,19 @@ void timer1_on()
     TCCR1B = 0x09;    // CTC; clk/1
 
     TCNT1 = 0;        // set counter
-    OCR1A = 0x1fff;   // compare A
+    OCR1A = 0x00ff;   // compare A
 
     TIMSK |= (1 << OCIE1A);
 }
 
-
 // Curret PWM slot
-uint8_t pwm_phase = pwm_slots;
+uint8_t pwm_phase = 15;
 uint8_t pwm_row = 0;
 
 // Color to be displayed
 volatile uint8_t brightness;
 
-#define PWM_FAST_SLOTS (6)
+#define PWM_FAST_SLOTS (8)
 #define PWM_ROWS (4)
 
 #define PIN_DEBUG1 0
@@ -54,7 +56,7 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
     PIN_TOGGLE(PORTB, PIN_DEBUG1);
 
     // Anti volatile and gamma correct!
-    uint16_t brightness_ = gamma_table[brightness >> 1];
+    uint16_t brightness_ = gamma_table[brightness/2];
 
     if (pwm_phase >= pwm_slots) {
         PIN_TOGGLE(PORTB, PIN_DEBUG2);
@@ -89,19 +91,27 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
             PORTD = port_cyc[2];
 
             // phase == 3
-            __builtin_avr_delay_cycles(4-1);
+            __builtin_avr_delay_cycles(4-3);
             PORTD = port_cyc[3];
 
             // phase == 4
-            __builtin_avr_delay_cycles(8-1);
+            __builtin_avr_delay_cycles(8-3);
             PORTD = port_cyc[4];
 
             // phase == 5
-            __builtin_avr_delay_cycles(16-1);
+            __builtin_avr_delay_cycles(16-3);
             PORTD = port_cyc[5];
 
             // phase == 6
-            __builtin_avr_delay_cycles(32-1);
+            __builtin_avr_delay_cycles(32-3);
+            PORTD = port_cyc[6];
+
+            // phase == 7
+            __builtin_avr_delay_cycles(64-3);
+            PORTD = port_cyc[7];
+
+            // phase == 8
+            __builtin_avr_delay_cycles(128-3);
             PORTD = 0x00;    // deactivate everything
         }
 
@@ -121,6 +131,9 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
             
         // prepare for next slot
         pwm_row = 1;
+
+        // Read out rotary encoder
+        rotary_tick();
     } else {
         // Disable columns and actually switch to next row
         uint8_t port = 0x10 << pwm_row;
@@ -136,7 +149,7 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
         OCR1A = 0x01 << pwm_phase;
 
         // cycle current row
-        pwm_row++
+        pwm_row++;
 
         // Are we entering a new pwm_phase?
         if (pwm_row >=  PWM_ROWS) {
@@ -145,8 +158,12 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
         }
     }
 
+    // Read rotary encoder
+    // rotary_tick();
+
     PIN_TOGGLE(PORTB, PIN_DEBUG1);
 }
+
 
 /**
  * Main
@@ -156,8 +173,14 @@ int main()
     // Digital I/O
     PORTD = PIN_DEFAULT;
     PORTB = 0x00;
+
 	DDRB = 0xff;
 	DDRD = 0xff;
+
+    PORTC = 0x03;
+    DDRC = 0xFF;
+
+    rotary_init();
     
     // Setup ADC
     /* ADMUX Register:
@@ -171,15 +194,15 @@ int main()
      * 
      * MUX = 0-7: Single ended Input on ADC0-ADC7
      */
-    ADMUX = 0x20;
+    //ADMUX = 0x20;
   
     /* ADCSRA Register:
      *   ADEN ADSC ADATE ADIF ADIE ADPS2-ADPS0
      */
-    ADCSRA = (1<<ADEN) | 7; //ADC aktivieren, Takt/128
+    //ADCSRA = (1<<ADEN) | 7; //ADC aktivieren, Takt/128
 
     // Initial brightness
-    brightness = 250;
+    brightness = 2;
 
     // Activate timer
     timer1_on();
@@ -192,14 +215,18 @@ int main()
     //wait(500);
 
 	while(1){
-        wait(50);
-        brightness++;
-        /*
-        PIN_TOGGLE(PORTB, PIN_DEBUG3);
-        PIN_TOGGLE(PORTB, PIN_DEBUG3);
-        PIN_TOGGLE(PORTB, PIN_DEBUG3);
-        PIN_TOGGLE(PORTB, PIN_DEBUG3);
-        /*
+        rotary_tick();
+        
+        // Read rotary 
+        int16_t new_brightness = (int16_t)brightness + 2*(int16_t)rotary_read2();
+        if (new_brightness < 0) new_brightness = 0;
+        if (new_brightness > 0xff) new_brightness = 0xff;
+
+        brightness = new_brightness;
+
+        //brightness += 2*rotary_read2();
+
+        //PORTD = (rotary_delta &0x0f) << 4;
         /*
         if ( (ADCSRA & (1<<ADIF)) ) {
             val = 1.0*linearize_poti(ADC) / 0xffff;

@@ -4,7 +4,7 @@
 import numpy as np
 
 steps = 128
-gamma = 2.2
+gamma = 2.0
 cpu_hz = 8e6
 
 x = np.linspace(0, 1., steps)
@@ -12,7 +12,7 @@ x = np.linspace(0, 1., steps)
 y = x**gamma    # gamma correct
 y = y / y[1]    # renormalize in terms of CPU cycles
 
-highest_bit = np.floor(np.log2(y[-1]))
+highest_bit = np.ceil(np.log2(y[-1]))
 update_freq = cpu_hz / (2**(highest_bit+1)-1)
 
 print "#include <avr/io.h>"
