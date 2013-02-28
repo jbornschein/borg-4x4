@@ -1,6 +1,6 @@
 
 DEFS = -DF_CPU=8000000
-OBJ = main.o util.o
+OBJ = main.o util.o gamma_table.o
 
 
 # Default values
@@ -9,7 +9,7 @@ MCU_TARGET    ?= atmega8
 MCU_CC        ?= avr-gcc
 OPTIMIZE      ?= -Os  -g
 WARNINGS      ?= -Wall
-CFLAGS        += -mmcu=$(MCU_TARGET) $(OPTIMIZE) $(WARNINGS) $(DEFS) 
+CFLAGS        += -mmcu=$(MCU_TARGET) $(OPTIMIZE) $(WARNINGS) $(DEFS) --std=c99
 #CFLAGS        += -fnew-ra
 LDFLAGS        = -Wl,-Map,$(OUT).map
 CANADDR       ?= XXX
