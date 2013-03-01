@@ -1,31 +1,40 @@
 #!/usr/bin/env python 
 
+from __future__ import division
 
 import numpy as np
 
-steps = 128
-gamma = 2.0
-cpu_hz = 8e6
+levels = 256
+pwm_slots = 14
+gamma = 2.2
+cpu_freq = 16e6
 
-x = np.linspace(0, 1., steps)
+
+max_brightness = 2**(pwm_slots+1)-1
+min_brightness = 1
+
+x = np.linspace(0, 1., levels)
 
 y = x**gamma    # gamma correct
-y = y / y[1]    # renormalize in terms of CPU cycles
 
-highest_bit = np.ceil(np.log2(y[-1]))
-update_freq = cpu_hz / (2**(highest_bit+1)-1)
+# Rescale gamma curve 
+scale = (max_brightness - min_brightness) / (y[-1] - y[1])
+shift = min_brightness - y[1]*scale
+y[1:] = scale*y[1:] + shift
+
+update_freq = cpu_freq / (2**(pwm_slots+1)-1)
 
 print "#include <avr/io.h>"
 print "#include <stdlib.h>"
 print
 print "/***"
-print " * Gamma table  (%d levels, gamma %.1f)" % (steps, gamma)
+print " * Gamma table  (%d levels, gamma %.1f)" % (levels, gamma)
 print " *"
-print " * Framerate when using this table (assuming no row muxing and 8MHz CPU clock): %3.1f" % update_freq
+print " * Framerate when using this table (assuming no row muxing and %d MHz CPU clock): %3.1f" % (cpu_freq // 1e6, update_freq)
 print " */"
-print "uint8_t  pwm_slots = %d;" % highest_bit
-print "uint16_t gamma_table[%d] = {" % steps,
-for i in xrange(steps):
+print "#define  PWM_SLOTS (%d)" % pwm_slots
+print "uint16_t gamma_table[%d] = {" % levels,
+for i in xrange(levels):
     if i % 8 == 0:
         print "\n    ",
     print "%5d," % int(y[i]),
