@@ -6,6 +6,11 @@
 extern volatile int8_t rotary_delta;
 
 /**
+ * Initialize fun stuff
+ */
+void rotary_init();
+
+/**
  * Call this regulary, e.. in a timer ISR
  */
 void rotary_tick(); 
