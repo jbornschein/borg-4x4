@@ -27,12 +27,17 @@ update_freq = cpu_freq / (2**(pwm_slots+1)-1)
 print "#include <avr/io.h>"
 print "#include <stdlib.h>"
 print
+print "#include \"config.h\""
+print
+print "#if MATRIX_NPLANES != %d" % pwm_slots
+print "#  error PWM_SLOTS and MATRIX_NPLANES do not agree:"
+print "#endif"
+print
 print "/***"
 print " * Gamma table  (%d levels, gamma %.1f)" % (levels, gamma)
 print " *"
 print " * Framerate when using this table (assuming no row muxing and %d MHz CPU clock): %3.1f" % (cpu_freq // 1e6, update_freq)
 print " */"
-print "#define  PWM_SLOTS (%d)" % pwm_slots
 print "uint16_t gamma_table[%d] = {" % levels,
 for i in xrange(levels):
     if i % 8 == 0:

@@ -1,12 +1,17 @@
 #include <avr/io.h>
 #include <stdlib.h>
 
+#include "config.h"
+
+#if MATRIX_NPLANES != 13
+#  error PWM_SLOTS and MATRIX_NPLANES do not agree:
+#endif
+
 /***
  * Gamma table  (256 levels, gamma 3.3)
  *
  * Framerate when using this table (assuming no row muxing and 16 MHz CPU clock): 976.6
  */
-#define  PWM_SLOTS (13)
 uint16_t gamma_table[256] = { 
          0,     1,     1,     1,     1,     1,     1,     1, 
          1,     1,     1,     1,     1,     1,     1,     1, 

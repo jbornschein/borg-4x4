@@ -5,156 +5,8 @@
 #include <avr/interrupt.h>
 
 #include "util.h"
+#include "matrix.h"
 #include "rotary.h"
-#include "gamma_table.h"
-
-#define ROWS 4
-#define COLS 4
-
-#define PWM_FAST_SLOTS (8)
-
-#define PIN_DEBUG1 0
-#define PIN_DEBUG2 1
-#define PIN_DEBUG3 2
-
-#define PIN_ON(var, pin) ((var) &= ~(1 << (pin)))
-#define PIN_TOGGLE(var, pin) ((var) ^= (1 << (pin)))
-
-#define PIN_DEFAULT (0x00)
-
-// Brightness to be displayed
-uint8_t leds[ROWS][COLS];
-
-/**
- * PWM stuff
- */
-uint8_t pwm_phase = 15;       // current PWM phase
-uint8_t pwm_row = 0;          // current row
-
-uint8_t bitplane[PWM_SLOTS][ROWS];  // valid for COLS <= 8
-
-void bitplanes_update()
-{
-    for(uint8_t plane=0; plane<PWM_SLOTS; plane++) {
-        uint16_t test_mask = 0x0001 << plane;
-        for(uint8_t row=0; row<ROWS; row++) {
-            uint8_t val = 0x00;
-            for(uint8_t col=0; col<COLS; col++) {
-                val <<= 1;
-                if (gamma_table[leds[row][col]] & test_mask)
-                    val |= 0x01;
-            }
-            bitplane[plane][row] = val;
-        }
-    }
-}
-
-
-
-SIGNAL(SIG_OUTPUT_COMPARE1A)
-{
-    PIN_TOGGLE(PORTB, PIN_DEBUG1);
-
-    if (pwm_phase >= PWM_SLOTS) {
-        PIN_TOGGLE(PORTB, PIN_DEBUG2);
-        PIN_TOGGLE(PORTB, PIN_DEBUG2);
-
-        // Do this for all the rows
-        for (pwm_row=0; pwm_row<ROWS; pwm_row++) {
-            // Activate proper row
-            uint8_t port = 0x10 << pwm_row; 
-            PORTD = port;
-
-            // Precalc first phases
-            uint8_t port_cyc[PWM_FAST_SLOTS];   
-
-            for(uint8_t i=0; i<PWM_FAST_SLOTS; i++) {
-                port_cyc[i] = port | bitplane[i][pwm_row];
-            }
-
-            uint8_t port_cyc0 = port_cyc[0];
-            uint8_t port_cyc1 = port_cyc[1];
-            uint8_t port_cyc2 = port_cyc[2];
-
-            // phase == 0
-            PORTD = port_cyc0;
-    
-            // phase == 1         (1 cycle)
-            PORTD = port_cyc1;
-
-            // phase == 2         (2 cycles)
-            __builtin_avr_delay_cycles(1);
-            PORTD = port_cyc2;
-
-            // phase == 3         (4 cycles)
-            __builtin_avr_delay_cycles(4-1);
-            PORTD = port_cyc[3];
-
-            // phase == 4
-            __builtin_avr_delay_cycles(8-1);
-            PORTD = port_cyc[4];
-
-            // phase == 5
-            __builtin_avr_delay_cycles(16-1);
-            PORTD = port_cyc[5];
-
-            // phase == 6
-            __builtin_avr_delay_cycles(32-1);
-            PORTD = port_cyc[6];
-
-            // phase == 7
-            __builtin_avr_delay_cycles(64-1);
-            PORTD = port_cyc[7];
-
-            // phase == 8
-            __builtin_avr_delay_cycles(128-1);
-            PORTD = 0x00;    // deactivate everything
-        }
-
-        // Prepare final output for FAST_SLOTS
-        pwm_phase = PWM_FAST_SLOTS;
-        pwm_row = 0;
-
-        // Test whether to activate columns
-        uint8_t port = 0x10 << pwm_row;
-        port |= bitplane[pwm_phase][pwm_row];
-
-        // Apply and Activate!
-        PORTD = port;
-        TCNT1 = 4;
-        OCR1A = 0x01 << pwm_phase;
-            
-        // prepare for next slot
-        pwm_row++;
-
-        // Read out rotary encoder
-    } else {
-        // Disable columns and actually switch to next row
-        uint8_t port = 0x10 << pwm_row;
-        PORTD = port;
-
-        port |= bitplane[pwm_phase][pwm_row];
-
-        // Apply and Activate!
-        PORTD = port;
-        TCNT1 = 4;
-        OCR1A = 0x01 << pwm_phase;
-
-        // cycle current row
-        pwm_row++;
-
-        // Are we entering a new pwm_phase?
-        if (pwm_row >=  ROWS) {
-            pwm_row = 0;
-            pwm_phase++;
-        }
-    }
-
-    // Read rotary encoder
-    rotary_tick();
-
-    PIN_TOGGLE(PORTB, PIN_DEBUG1);
-}
 
 /**
  * Lenarize a logarithmic poti
@@ -174,39 +26,13 @@ uint16_t linearize_poti(uint16_t adc)
 */
 
 
-
-void timer1_on()
-{
-    TCCR1A = 0x00;    // CTC
-    TCCR1B = 0x09;    // CTC; clk/1
-
-    TCNT1 = 0;        // set counter
-    OCR1A = 0x00ff;   // compare A
-
-    TIMSK |= (1 << OCIE1A);
-}
-
-void set_constant_brightness(uint8_t val)
-{
-    for(uint8_t row=0; row<ROWS; row++) {
-        for(uint8_t col=0; col<COLS; col++) {
-            leds[row][col] = val;
-        }
-    }
-    bitplanes_update();
-}
-
 /**
  * Main
  */
 int main()
 {
-    // Digital I/O
-    PORTD = PIN_DEFAULT;
     PORTB = 0x00;
-
 	DDRB = 0xff;
-	DDRD = 0xff;
 
     PORTC = 0x03;
     DDRC = 0x00;
@@ -232,10 +58,10 @@ int main()
      */
     //ADCSRA = (1<<ADEN) | 7; //ADC aktivieren, Takt/128
 
-    set_constant_brightness(0);
+    matrix_fill8(0);
 
     // Activate timer
-    timer1_on();
+    matrix_timer1_on();
 	sei();
 
     //wait(500);
@@ -249,10 +75,9 @@ int main()
     int8_t  fade = 1;
     int16_t brightness = 0;
     int16_t new_brightness = brightness;
-    set_constant_brightness(brightness);
+    matrix_fill8(brightness);
 	while(1){
         wait(10);
-
 
         int8_t change = rotary_read2();
         if (change) {
@@ -276,7 +101,7 @@ int main()
         }
         if (new_brightness != brightness) {
             brightness = new_brightness;
-            set_constant_brightness((uint8_t)brightness);
+            matrix_fill8((uint8_t)brightness);
         }
         /*
         for(uint8_t j=0; j<16; j++) {
