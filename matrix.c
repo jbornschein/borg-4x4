@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <avr/io.h>
+#include <avr/wdt.h>
 #include <avr/interrupt.h>
 
 #include "matrix.h"
@@ -110,6 +111,8 @@ void matrix_timer1_on()
     OCR1A = 0x00ff;   // compare A
 
     TIMSK |= (1 << OCIE1A);
+
+    wdt_enable(0x00); // 17ms watchdog
 }
 
 
@@ -120,6 +123,7 @@ void matrix_timer1_on()
 SIGNAL(SIG_OUTPUT_COMPARE1A)
 {
     PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN1);
+    wdt_reset();
 
     if (pwm_phase >= MATRIX_NPLANES) {
         PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN2);
