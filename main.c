@@ -74,38 +74,40 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
 
             uint8_t port_cyc0 = port_cyc[0];
             uint8_t port_cyc1 = port_cyc[1];
+            uint8_t port_cyc2 = port_cyc[2];
 
             // phase == 0
             PORTD = port_cyc0;
     
-            // phase == 1
+            // phase == 1         (1 cycle)
             PORTD = port_cyc1;
 
-            // phase == 2
-            PORTD = port_cyc[2];
+            // phase == 2         (2 cycles)
+            __builtin_avr_delay_cycles(1);
+            PORTD = port_cyc2;
 
-            // phase == 3
-            __builtin_avr_delay_cycles(4-3);
+            // phase == 3         (4 cycles)
+            __builtin_avr_delay_cycles(4-1);
             PORTD = port_cyc[3];
 
             // phase == 4
-            __builtin_avr_delay_cycles(8-3);
+            __builtin_avr_delay_cycles(8-1);
             PORTD = port_cyc[4];
 
             // phase == 5
-            __builtin_avr_delay_cycles(16-3);
+            __builtin_avr_delay_cycles(16-1);
             PORTD = port_cyc[5];
 
             // phase == 6
-            __builtin_avr_delay_cycles(32-3);
+            __builtin_avr_delay_cycles(32-1);
             PORTD = port_cyc[6];
 
             // phase == 7
-            __builtin_avr_delay_cycles(64-3);
+            __builtin_avr_delay_cycles(64-1);
             PORTD = port_cyc[7];
 
             // phase == 8
-            __builtin_avr_delay_cycles(128-3);
+            __builtin_avr_delay_cycles(128-1);
             PORTD = 0x00;    // deactivate everything
         }
 
@@ -171,6 +173,8 @@ uint16_t linearize_poti(uint16_t adc)
 }
 */
 
+
+
 void timer1_on()
 {
     TCCR1A = 0x00;    // CTC
@@ -182,6 +186,15 @@ void timer1_on()
     TIMSK |= (1 << OCIE1A);
 }
 
+void set_constant_brightness(uint8_t val)
+{
+    for(uint8_t row=0; row<ROWS; row++) {
+        for(uint8_t col=0; col<COLS; col++) {
+            leds[row][col] = val;
+        }
+    }
+    bitplanes_update();
+}
 
 /**
  * Main
@@ -219,17 +232,10 @@ int main()
      */
     //ADCSRA = (1<<ADEN) | 7; //ADC aktivieren, Takt/128
 
-    // Initial brightness
-    for(uint8_t row=0; row<ROWS; row++) {
-        for(uint8_t col=0; col<COLS; col++) {
-            leds[row][col] = 255;
-        }
-    }
-    bitplanes_update();
+    set_constant_brightness(0);
 
     // Activate timer
     timer1_on();
-
 	sei();
 
     //wait(500);
@@ -237,20 +243,42 @@ int main()
     //ADCSRA |= (1<<ADSC);//Einen Konvertierungsvorgang starten
     //wait(500);
 
-    uint16_t i = 0;
+    const uint16_t idle_timeout = 500;
+    uint16_t idle = 250;
+
+    int8_t  fade = 1;
+    int16_t brightness = 0;
+    int16_t new_brightness = brightness;
+    set_constant_brightness(brightness);
 	while(1){
-        i++;
+        wait(10);
+
 
         int8_t change = rotary_read2();
         if (change) {
-            for(uint8_t row=0; row<ROWS; row++) {
-                for(uint8_t col=0; col<COLS; col++) {
-                        leds[row][col] += change;
-                }
+            idle = 0;
+            new_brightness += change;
+        } else {
+            if (idle > idle_timeout) {
+                new_brightness += fade;
+            } else {
+                idle++;
             }
-            bitplanes_update();
         }
 
+        if (new_brightness < 0) {
+            new_brightness = 0;
+            fade = +1;
+        };
+        if (new_brightness > 0xff) {
+            new_brightness = 0xff;
+            fade = -1;
+        }
+        if (new_brightness != brightness) {
+            brightness = new_brightness;
+            set_constant_brightness((uint8_t)brightness);
+        }
+        /*
         for(uint8_t j=0; j<16; j++) {
             PIN_TOGGLE(PORTB, PIN_DEBUG3);
             PIN_TOGGLE(PORTB, PIN_DEBUG3);
@@ -261,6 +289,7 @@ int main()
             PIN_TOGGLE(PORTB, PIN_DEBUG3);
             PIN_TOGGLE(PORTB, PIN_DEBUG3);
         }
+        */
 
 
 

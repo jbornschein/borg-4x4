@@ -5,12 +5,12 @@ from __future__ import division
 import numpy as np
 
 levels = 256
-pwm_slots = 14
-gamma = 2.2
+pwm_slots = 13
+gamma = 3.3
 cpu_freq = 16e6
 
 
-max_brightness = 2**(pwm_slots+1)-1
+max_brightness = 2**(pwm_slots)-1
 min_brightness = 1
 
 x = np.linspace(0, 1., levels)
