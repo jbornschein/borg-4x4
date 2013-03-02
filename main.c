@@ -64,7 +64,7 @@ int main()
     matrix_timer1_on();
 	sei();
 
-    //wait(500);
+    wait(500);
     //ADCSRA |= (1<<ADIF);//Interrupt Flag zurücksetzen
     //ADCSRA |= (1<<ADSC);//Einen Konvertierungsvorgang starten
     //wait(500);
@@ -76,6 +76,16 @@ int main()
     int16_t brightness = 0;
     int16_t new_brightness = brightness;
     matrix_fill8(brightness);
+
+	while(1){
+        wait(20);
+        matrix_waitsync();
+        matrix_fill16(8191);
+        wait(20);
+        matrix_waitsync();
+        matrix_fill16(8192);
+    }
+
 	while(1){
         wait(10);
 
@@ -106,18 +116,17 @@ int main()
             matrix_fill8((uint8_t)brightness);
         }
         /*
-        for(uint8_t j=0; j<16; j++) {
-            PIN_TOGGLE(PORTB, PIN_DEBUG3);
-            PIN_TOGGLE(PORTB, PIN_DEBUG3);
-            PIN_TOGGLE(PORTB, PIN_DEBUG3);
-            PIN_TOGGLE(PORTB, PIN_DEBUG3);
-            PIN_TOGGLE(PORTB, PIN_DEBUG3);
-            PIN_TOGGLE(PORTB, PIN_DEBUG3);
-            PIN_TOGGLE(PORTB, PIN_DEBUG3);
-            PIN_TOGGLE(PORTB, PIN_DEBUG3);
+        for(uint8_t j=0; j<1000; j++) {
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
         }
         */
-
 
 
         /*

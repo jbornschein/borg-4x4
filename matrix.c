@@ -32,7 +32,7 @@ uint8_t pwm_row = 0;          // current row
 uint8_t bitplane[MATRIX_NPLANES][MATRIX_ROWS];  // valid for COLS <= 8
 
 
-#define ISR_LATENCY 60
+#define ISR_LATENCY 40
 
 /*****************************************************************************
  * Set individual pixel
@@ -143,6 +143,7 @@ void matrix_waitsync()
 SIGNAL(SIG_OUTPUT_COMPARE1A)
 {
     PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN1);
+    uint8_t port = 0;
     wdt_reset();
 
     if (pwm_phase < MATRIX_FAST_SLOTS) {
@@ -152,7 +153,7 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
         // Do this for all the rows
         for (pwm_row=0; pwm_row < MATRIX_ROWS; pwm_row++) {
             // Activate proper row
-            uint8_t port = 0x10 << pwm_row;
+            uint8_t port = shl8_table[pwm_row+4];
             PORTD = port;
 
             // Precalc first phases
@@ -190,14 +191,21 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
 
             // phase == 6
             __builtin_avr_delay_cycles(32-3);
+
+#if MATRIX_FAST_SLOTS > 6
             PORTD = port_cyc[6];
 
             // phase == 7
             __builtin_avr_delay_cycles(64-3);
+#endif
+
+#if MATRIX_FAST_SLOTS > 7
             PORTD = port_cyc[7];
 
             // phase == 8
             __builtin_avr_delay_cycles(128-3);
+#endif
+
             PORTD = 0x00;    // deactivate everything
         }
 
@@ -212,23 +220,23 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
         // Apply and Activate!
         PORTD = port;
         TCNT1 = ISR_LATENCY;
-        OCR1A = 0x01 << pwm_phase;
+        OCR1A = shl16_table[pwm_phase];
             
         // prepare for next slot
         pwm_row++;
-
-        // Read out rotary encoder
     } else {
         // Disable columns and actually switch to next row
         uint8_t port = shl8_table[pwm_row+4];
+        //__builtin_avr_delay_cycles(10);
         PORTD = port;
+        //__builtin_avr_delay_cycles(10);
 
         port |= bitplane[pwm_phase][pwm_row];
 
         // Apply and Activate!
         PORTD = port;
         TCNT1 = ISR_LATENCY;
-        OCR1A = 0x01 << pwm_phase;
+        OCR1A = shl16_table[pwm_phase];
 
         // cycle current row
         pwm_row++;
@@ -240,6 +248,9 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
 
             if (pwm_phase == MATRIX_NPLANES) {
                 pwm_phase = 0;
+                pwm_phase = MATRIX_FAST_SLOTS;
+                PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN2);
+                PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN2);
                 matrix_syncbit = 1 - matrix_syncbit;
             }
         }
