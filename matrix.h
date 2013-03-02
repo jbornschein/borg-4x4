@@ -37,7 +37,7 @@ void matrix_blit8(uint8_t y, uint8_t x, uint8_t rows, uint8_t cols,
 void matrix_timer1_on();
 void matrix_off();
 
-void matrix_sync_wait();
+void matrix_waitsync();
 
 
 #endif // MATRIX_H

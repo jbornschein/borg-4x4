@@ -101,6 +101,8 @@ int main()
         }
         if (new_brightness != brightness) {
             brightness = new_brightness;
+
+            matrix_waitsync();
             matrix_fill8((uint8_t)brightness);
         }
         /*

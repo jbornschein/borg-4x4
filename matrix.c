@@ -14,7 +14,9 @@
 /*****************************************************************************
  * PWM Variables
  */
-uint8_t pwm_phase = 15;       // current PWM phase
+volatile int8_t matrix_syncbit = 0;
+
+uint8_t pwm_phase = 0;        // current PWM phase
 uint8_t pwm_row = 0;          // current row
 
 uint8_t bitplane[MATRIX_NPLANES][MATRIX_ROWS];  // valid for COLS <= 8
@@ -115,6 +117,12 @@ void matrix_timer1_on()
     wdt_enable(0x00); // 17ms watchdog
 }
 
+void matrix_waitsync()
+{
+    int8_t old_sync = matrix_syncbit;
+
+    while(old_sync == matrix_syncbit);
+}
 
 /*****************************************************************************
  * PWM Interrupt
@@ -125,7 +133,7 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
     PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN1);
     wdt_reset();
 
-    if (pwm_phase >= MATRIX_NPLANES) {
+    if (pwm_phase < MATRIX_FAST_SLOTS) {
         PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN2);
         PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN2);
 
@@ -217,6 +225,11 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
         if (pwm_row >=  MATRIX_ROWS) {
             pwm_row = 0;
             pwm_phase++;
+
+            if (pwm_phase == MATRIX_NPLANES) {
+                pwm_phase = 0;
+                matrix_syncbit = 1 - matrix_syncbit;
+            }
         }
     }
 
