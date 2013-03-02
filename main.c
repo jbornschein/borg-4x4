@@ -69,8 +69,8 @@ int main()
     //ADCSRA |= (1<<ADSC);//Einen Konvertierungsvorgang starten
     //wait(500);
 
-    const uint16_t idle_timeout = 500;
-    uint16_t idle = 250;
+    const uint16_t idle_timeout = 6000;
+    uint16_t idle = idle_timeout - 200;
 
     int8_t  fade = 1;
     int16_t brightness = 0;

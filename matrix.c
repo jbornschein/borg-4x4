@@ -9,7 +9,17 @@
 #include "gamma_table.h"
 #include "rotary.h"
 
+uint8_t shl8_table[] = {
+    0x01, 0x02, 0x04, 0x08, 
+    0x10, 0x20, 0x40, 0x80,
+};
 
+uint16_t shl16_table[] = {
+    0x0001, 0x0002, 0x0004, 0x0008, 
+    0x0010, 0x0020, 0x0040, 0x0080,
+    0x0100, 0x0200, 0x0400, 0x0800,
+    0x1000, 0x2000, 0x4000, 0x8000
+};
 
 /*****************************************************************************
  * PWM Variables
@@ -21,6 +31,8 @@ uint8_t pwm_row = 0;          // current row
 
 uint8_t bitplane[MATRIX_NPLANES][MATRIX_ROWS];  // valid for COLS <= 8
 
+
+#define ISR_LATENCY 60
 
 /*****************************************************************************
  * Set individual pixel
@@ -59,7 +71,7 @@ void matrix_fill16(uint16_t raw_val)
     for(uint8_t plane=0; plane < MATRIX_NPLANES; plane++, test_mask<<=1) {
         if (raw_val & test_mask) {
             for(uint8_t row=0; row < MATRIX_ROWS; row++)
-                bitplane[plane][row] = 0xff;
+                bitplane[plane][row] = 0x0f;
         } else {
             for(uint8_t row=0; row < MATRIX_ROWS; row++)
                 bitplane[plane][row] = 0x00;
@@ -140,7 +152,7 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
         // Do this for all the rows
         for (pwm_row=0; pwm_row < MATRIX_ROWS; pwm_row++) {
             // Activate proper row
-            uint8_t port = 0x10 << pwm_row; 
+            uint8_t port = 0x10 << pwm_row;
             PORTD = port;
 
             // Precalc first phases
@@ -165,27 +177,27 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
             PORTD = port_cyc2;
 
             // phase == 3         (4 cycles)
-            __builtin_avr_delay_cycles(4-1);
+            __builtin_avr_delay_cycles(4-3);
             PORTD = port_cyc[3];
 
             // phase == 4
-            __builtin_avr_delay_cycles(8-1);
+            __builtin_avr_delay_cycles(8-3);
             PORTD = port_cyc[4];
 
             // phase == 5
-            __builtin_avr_delay_cycles(16-1);
+            __builtin_avr_delay_cycles(16-3);
             PORTD = port_cyc[5];
 
             // phase == 6
-            __builtin_avr_delay_cycles(32-1);
+            __builtin_avr_delay_cycles(32-3);
             PORTD = port_cyc[6];
 
             // phase == 7
-            __builtin_avr_delay_cycles(64-1);
+            __builtin_avr_delay_cycles(64-3);
             PORTD = port_cyc[7];
 
             // phase == 8
-            __builtin_avr_delay_cycles(128-1);
+            __builtin_avr_delay_cycles(128-3);
             PORTD = 0x00;    // deactivate everything
         }
 
@@ -194,12 +206,12 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
         pwm_row = 0;
 
         // Test whether to activate columns
-        uint8_t port = 0x10 << pwm_row;
+        uint8_t port = shl8_table[pwm_row+4];
         port |= bitplane[pwm_phase][pwm_row];
 
         // Apply and Activate!
         PORTD = port;
-        TCNT1 = 4;
+        TCNT1 = ISR_LATENCY;
         OCR1A = 0x01 << pwm_phase;
             
         // prepare for next slot
@@ -208,14 +220,14 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
         // Read out rotary encoder
     } else {
         // Disable columns and actually switch to next row
-        uint8_t port = 0x10 << pwm_row;
+        uint8_t port = shl8_table[pwm_row+4];
         PORTD = port;
 
         port |= bitplane[pwm_phase][pwm_row];
 
         // Apply and Activate!
         PORTD = port;
-        TCNT1 = 4;
+        TCNT1 = ISR_LATENCY;
         OCR1A = 0x01 << pwm_phase;
 
         // cycle current row
