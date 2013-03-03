@@ -248,9 +248,9 @@ SIGNAL(SIG_OUTPUT_COMPARE1A)
 
             if (pwm_phase == MATRIX_NPLANES) {
                 pwm_phase = 0;
-                pwm_phase = MATRIX_FAST_SLOTS;
-                PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN2);
-                PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN2);
+                //pwm_phase = MATRIX_FAST_SLOTS;
+                //PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN2);
+                //PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN2);
                 matrix_syncbit = 1 - matrix_syncbit;
             }
         }

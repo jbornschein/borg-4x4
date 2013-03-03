@@ -11,7 +11,7 @@
 // Matrix defines
 #define MATRIX_ROWS 4
 #define MATRIX_COLS 4
-#define MATRIX_NPLANES 14
+#define MATRIX_NPLANES 13
 #define MATRIX_FAST_SLOTS 8
 #define PIN_DEFAULT (0x00)
 
