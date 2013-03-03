@@ -84,71 +84,19 @@ int main()
         wait(20);
         matrix_waitsync();
         matrix_fill16(8192);
+
+        /*
+        for(uint8_t j=0; j<10; j++) {
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
+        }
+        */
+
     }
-
-	while(1){
-        wait(10);
-
-        int8_t change = rotary_read2();
-        if (change) {
-            idle = 0;
-            new_brightness += change;
-        } else {
-            if (idle > idle_timeout) {
-                new_brightness += fade;
-            } else {
-                idle++;
-            }
-        }
-
-        if (new_brightness < 0) {
-            new_brightness = 0;
-            fade = +1;
-        };
-        if (new_brightness > 0xff) {
-            new_brightness = 0xff;
-            fade = -1;
-        }
-        if (new_brightness != brightness) {
-            brightness = new_brightness;
-
-            matrix_waitsync();
-            matrix_fill8((uint8_t)brightness);
-        }
-        /*
-        for(uint8_t j=0; j<1000; j++) {
-            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
-            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
-            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
-            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
-            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
-            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
-            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
-            PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN3);
-        }
-        */
-
-
-        /*
-        rotary_tick();
-        
-        // Read rotary 
-        int16_t new_brightness = (int16_t)brightness + 2*(int16_t)rotary_read2();
-        if (new_brightness < 0) new_brightness = 0;
-        if (new_brightness > 0xff) new_brightness = 0xff;
-
-        brightness = new_brightness;
-
-        //brightness += 2*rotary_read2();
-
-        //PORTD = (rotary_delta &0x0f) << 4;
-        if ( (ADCSRA & (1<<ADIF)) ) {
-            val = 1.0*linearize_poti(ADC) / 0xffff;
-
-            ADCSRA |= (1<<ADIF);//Interrupt Flag zurücksetzen
-            ADCSRA |= (1<<ADSC);//Einen Konvertierungsvorgang starten
-        }
-        */
-
-	}
 }

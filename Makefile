@@ -17,7 +17,8 @@ CANADDR       ?= XXX
 # External Tools
 OBJCOPY       ?= avr-objcopy
 OBJDUMP       ?= avr-objdump
-FLASHCMD      ?= avrdude -c stk500 -P $(AVRDEV) -p m8 -F -V -U flash:w:$(OUT).hex
+STK500DEVICE  ?= /dev/tty.usbmodemfa141
+FLASHCMD      ?= avrdude -c stk500 -P $(STK500DEVICE) -p m8 -F -V -U flash:w:$(OUT).hex
 
 #############################################################################
 # Rules
@@ -31,6 +32,15 @@ flash: $(OUT).hex
 	$(ERASECMD)
 	$(FLASHCMD)
 
+lst: $(OUT).lst
+
+
+#############################################################################
+# Special stuff
+
+gamma_table.c: create_gamma_table.py 
+	./create_gamma_table.py > $@
+
 #############################################################################
 # Building Rules 
 $(OUT).elf: $(OBJ)
@@ -39,8 +49,6 @@ $(OUT).elf: $(OBJ)
 %.o: %.c
 	$(MCU_CC) $(CFLAGS) -c $<
 
-
-lst: $(OUT).lst
 
 %.lst: %.elf
 	$(OBJDUMP) -h -S $< > $@
