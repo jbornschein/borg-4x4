@@ -77,18 +77,6 @@ int main()
     int16_t new_brightness = brightness;
     matrix_fill8(brightness);
 
-    /*
-       // Provoke extreme flashing
-	while(1){
-        wait(20);
-        matrix_waitsync();
-        matrix_fill16(8191);
-        wait(20);
-        matrix_waitsync();
-        matrix_fill16(8192);
-    }
-    */
-
 	while(1){
         wait(10);
 
