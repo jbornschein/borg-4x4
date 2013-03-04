@@ -140,10 +140,9 @@ void matrix_waitsync()
  * PWM Interrupt
  */
 
-SIGNAL(SIG_OUTPUT_COMPARE1A)
+ISR(TIMER1_COMPA_vect)
 {
     PIN_TOGGLE(DEBUG_PORT, DEBUG_PIN1);
-    uint8_t port = 0;
     wdt_reset();
 
     if (pwm_phase < MATRIX_FAST_SLOTS) {

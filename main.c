@@ -61,7 +61,7 @@ int main()
     matrix_fill8(0);
 
     // Activate timer
-    matrix_timer1_on();
+    matrix_on();
 	sei();
 
     wait(500);
