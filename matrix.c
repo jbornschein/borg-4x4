@@ -111,11 +111,11 @@ void matrix_blit8(uint8_t y, uint8_t x, uint8_t rows, uint8_t cols,
  * Turning it on and off again
  */
 
-void matrix_timer1_on()
+void matrix_on()
 {
     // Configure I/Os
-	DDRD = 0xff;
-    PORTD = PIN_DEFAULT;
+	MATRIX_COL1_DDR = 0xff;
+    MATRIX_COL1_PORT = PIN_DEFAULT;
 
     // COnfigure timer interrupt
     TCCR1A = 0x00;    // CTC
@@ -153,7 +153,7 @@ ISR(TIMER1_COMPA_vect)
         for (pwm_row=0; pwm_row < MATRIX_ROWS; pwm_row++) {
             // Activate proper row
             uint8_t port = shl8_table[pwm_row+4];
-            PORTD = port;
+            MATRIX_COL1_PORT = port;
 
             // Precalc first phases
             uint8_t port_cyc[MATRIX_FAST_SLOTS];   
@@ -167,45 +167,45 @@ ISR(TIMER1_COMPA_vect)
             uint8_t port_cyc2 = port_cyc[2];
 
             // phase == 0
-            PORTD = port_cyc0;
+            MATRIX_COL1_PORT = port_cyc0;
     
             // phase == 1         (1 cycle)
-            PORTD = port_cyc1;
+            MATRIX_COL1_PORT = port_cyc1;
 
             // phase == 2         (2 cycles)
             __builtin_avr_delay_cycles(1);
-            PORTD = port_cyc2;
+            MATRIX_COL1_PORT = port_cyc2;
 
             // phase == 3         (4 cycles)
             __builtin_avr_delay_cycles(4-3);
-            PORTD = port_cyc[3];
+            MATRIX_COL1_PORT = port_cyc[3];
 
             // phase == 4
             __builtin_avr_delay_cycles(8-3);
-            PORTD = port_cyc[4];
+            MATRIX_COL1_PORT = port_cyc[4];
 
             // phase == 5
             __builtin_avr_delay_cycles(16-3);
-            PORTD = port_cyc[5];
+            MATRIX_COL1_PORT = port_cyc[5];
 
             // phase == 6
             __builtin_avr_delay_cycles(32-3);
 
 #if MATRIX_FAST_SLOTS > 6
-            PORTD = port_cyc[6];
+            MATRIX_COL1_PORT = port_cyc[6];
 
             // phase == 7
             __builtin_avr_delay_cycles(64-3);
 #endif
 
 #if MATRIX_FAST_SLOTS > 7
-            PORTD = port_cyc[7];
+            MATRIX_COL1_PORT = port_cyc[7];
 
             // phase == 8
             __builtin_avr_delay_cycles(128-3);
 #endif
 
-            PORTD = 0x00;    // deactivate everything
+            MATRIX_COL1_PORT = 0x00;    // deactivate everything
         }
 
         // Prepare final output for FAST_SLOTS
@@ -217,7 +217,7 @@ ISR(TIMER1_COMPA_vect)
         port |= bitplane[pwm_phase][pwm_row];
 
         // Apply and Activate!
-        PORTD = port;
+        MATRIX_COL1_PORT = port;
         TCNT1 = ISR_LATENCY;
         OCR1A = shl16_table[pwm_phase];
             
@@ -227,13 +227,13 @@ ISR(TIMER1_COMPA_vect)
         // Disable columns and actually switch to next row
         uint8_t port = shl8_table[pwm_row+4];
         //__builtin_avr_delay_cycles(10);
-        PORTD = port;
+        MATRIX_COL1_PORT = port;
         //__builtin_avr_delay_cycles(10);
 
         port |= bitplane[pwm_phase][pwm_row];
 
         // Apply and Activate!
-        PORTD = port;
+        MATRIX_COL1_PORT = port;
         TCNT1 = ISR_LATENCY;
         OCR1A = shl16_table[pwm_phase];
 

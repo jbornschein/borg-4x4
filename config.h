@@ -13,7 +13,12 @@
 #define MATRIX_COLS 4
 #define MATRIX_NPLANES 13
 #define MATRIX_FAST_SLOTS 8
+
 #define PIN_DEFAULT (0x00)
+
+#define MATRIX_COL1_PORT PORTD
+#define MATRIX_COL1_DDR  DDRD
+
 
 
 //c uart.[ch] defines
